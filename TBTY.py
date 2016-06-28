@@ -14,6 +14,7 @@ from TBTYDoctor import TBTYDoctor
 from TBTYAgent import TBTYAgent
 from TBTYCaravan import TBTYCaravan
 from TBTYFriend import TBTYFriend
+from TBTYBuffer import TBTYBuffer
 
 SCORE_BASE = 1.1
 
@@ -138,12 +139,13 @@ class TBTYConfig(object):
         return '[%s, %s]=>%s\n%s' % (STAGES[self.initial_stage], STAGES[self.terminal_stage], self.home_dir, str(map(lambda x: x.stringify(), self.queries)))
 
 def SocketToQueue(conn, q):
+    tbuf = TBTYBuffer(lambda: conn.recv(1024), '\n')
     while conn:
-        data = conn.recv(1024)
+        data = tbuf.get_msg()
         if not data:
             conn.close()
             return
-        q.put(data.strip())
+        q.put(data)
 
 class TBTYSupervisor:
     def __init__(self, worker_type, conn_addr):

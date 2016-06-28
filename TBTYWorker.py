@@ -3,6 +3,7 @@ import socket
 import re
 import Queue
 from abc import ABCMeta, abstractmethod
+from TBTYBuffer import TBTYBuffer
 
 COMMANDS = {
         'init': '!INIT!',
@@ -24,6 +25,7 @@ class TBTYWorker(threading.Thread):
         self.BUF_SIZE = 1024
         self.delimiter = '\n'
         self.initialized = False
+        self.tbuf = None
 
     @staticmethod
     def parse_msg(message):
@@ -34,28 +36,12 @@ class TBTYWorker(threading.Thread):
         self.sock.sendall('<%s>%s\n' % (self.w_type, message))
 
     def recv_msg(self):
-        if not self.queue.empty():
-            self.last_msg = self.queue.get()
-            return True
+        msg = self.tbuf.get_msg()
 
-        while 1:
-            newdata = self.recv_sock()
-            if not newdata or len(newdata) == 0:
-                return False
-            self._data += newdata
-            while self._ptr < len(self._data):
-                if self._data[self._ptr] == self.delimiter:
-                    ex_msg = self._data[:self._ptr]
-                    self.queue.put(ex_msg)
-                    self._data = self._data[self._ptr+1:]
-                    self._ptr = 0
-                else:
-                    self._ptr += 1
+        if not msg:
+            return False
 
-            if len(self._data) == 0:
-                break
-
-        self.last_msg = self.queue.get()
+        self.last_msg = msg
         return True
         
     
@@ -68,6 +54,7 @@ class TBTYWorker(threading.Thread):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect(self.config.getServerAddress())
         self.recv_sock = lambda: self.sock.recv(self.BUF_SIZE)
+        self.tbuf = TBTYBuffer(self.recv_sock, '\n')
         self.send_msg('init')
         try:
             while self.recv_msg():
