@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
-import TBTYWorker
+import MuseWorker
 import youtube_dl
 
-class TBTYCaravan(TBTYWorker.TBTYWorker):
+class MuseCaravan(MuseWorker.MuseWorker):
     def process(self, yt_result, prog_cb):
         self.prog_cb = prog_cb
         ydl_opts = {

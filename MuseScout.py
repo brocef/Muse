@@ -4,18 +4,18 @@ import urllib
 from bs4 import BeautifulSoup, NavigableString
 import re
 from unidecode import unidecode
-import TBTYWorker
+import MuseWorker
 
 '''
-    Initialized with a list of TBTYQuery objects, as part of the config
-    object, and it writes a list of videos to the TBTY server to be downloaded
+    Initialized with a list of MuseQuery objects, as part of the config
+    object, and it writes a list of videos to the Muse server to be downloaded
 '''
 
 _DEBUG = False
 search_url = 'https://www.youtube.com/results?search_query=%s'
 page_search_url = 'https://www.youtube.com/results?search_query=%s&page=%d'
 
-class TBTYScout(TBTYWorker.TBTYWorker):
+class MuseScout(MuseWorker.MuseWorker):
     def process(self, query, prog_cb):
         for result in self.ScrapeYT(query):
             yield result

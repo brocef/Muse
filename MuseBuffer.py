@@ -1,6 +1,6 @@
 import Queue
 
-class TBTYBuffer:
+class MuseBuffer:
     def __init__(self, input_src, delimiter):
         self._data = ''
         self._ptr = 0

@@ -2,7 +2,7 @@ import urllib
 
 QUERY_TYPES = ('Artist', 'Track', 'Album', '*')
 
-class TBTYQuery:
+class MuseQuery:
     def __init__(self, raw_query):
         assert(len(raw_query) == 3)
         self.q_term = raw_query[0]

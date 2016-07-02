@@ -5,10 +5,10 @@ WORKER_TYPES = ('SCT', 'CVN', 'DOC', 'AGT', 'FND')
 WORKER_TYPE_ORDER = dict(enumerate(WORKER_TYPES))
 WORKER_TYPE_MAP = dict((v,k) for k,v in WORKER_TYPE_ORDER.iteritems())
 
-class TBTYWorker(threading.Thread):
+class MuseWorker(threading.Thread):
     __metaclass__ = ABCMeta
     def __init__(self, config, worker_id, input_q, output_q, progress_callback):
-        super(TBTYWorker, self).__init__()
+        super(MuseWorker, self).__init__()
         self.config = config
         self.w_id = worker_id
         self.in_q = input_q

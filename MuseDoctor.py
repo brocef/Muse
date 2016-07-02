@@ -1,8 +1,8 @@
-import TBTYWorker
+import MuseWorker
 import os
 import subprocess
 
-class TBTYDoctor(TBTYWorker.TBTYWorker):
+class MuseDoctor(MuseWorker.MuseWorker):
     def process(self, yt_result_pc, prog_cb):
         mp4n = yt_result_pc['mp4_name']
         mp3n = yt_result_pc['mp3_name']

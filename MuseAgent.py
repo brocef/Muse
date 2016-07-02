@@ -1,4 +1,4 @@
-import TBTYWorker
+import MuseWorker
 import sys
 import acoustid
 from math import log
@@ -38,7 +38,7 @@ def compare_scores(x, y, query):
         return cmp(x[1],y[1])
     return 0
 
-class TBTYAgent(TBTYWorker.TBTYWorker):
+class MuseAgent(MuseWorker.MuseWorker):
     def process(self, yt_result, prog_cb):
         try:
             aid = self.IdentifySoundFile(yt_result)
