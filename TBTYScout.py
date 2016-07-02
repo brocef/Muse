@@ -10,29 +10,30 @@ import TBTYWorker
     Initialized with a list of TBTYQuery objects, as part of the config
     object, and it writes a list of videos to the TBTY server to be downloaded
 '''
-class TBTYScout(TBTYWorker.TBTYWorker):
-    def run(self):
-        self.init(self.TYPES[0])
-
-    def process(self, data):
-        self.send_msg(data)
 
 _DEBUG = False
 search_url = 'https://www.youtube.com/results?search_query=%s'
 page_search_url = 'https://www.youtube.com/results?search_query=%s&page=%d'
 
-def ScrapeYT(search_queries, decoded_queries):
-    parser = etree.XMLParser(recover=True)
-    results = []
-    for i in xrange(0, len(search_queries)):
-        query = search_queries[i]
-        decoded_query = decoded_queries[i]
-        (query_str, q_type, pages) = query
+class TBTYScout(TBTYWorker.TBTYWorker):
+    def process(self, query, prog_cb):
+        for result in self.ScrapeYT(query):
+            yield result
+
+    def simScrapeYT(self, query):
+        return query
+
+    def ScrapeYT(self, query):
+        parser = etree.XMLParser(recover=True)
+        (query_str, q_type, pages) = query.asTuple()
+        enc_query_str = query.getURLTerm()
         for page in xrange(1, pages+1):
+            target = None
             if page == 1:
-                response = urllib2.urlopen(search_url % (query_str))
+                target = search_url % (enc_query_str)
             else:
-                response = urllib2.urlopen(page_search_url % (query_str, page))
+                target = page_search_url % (enc_query_str, page)
+            response = urllib2.urlopen(target)
             html = response.read()
             soup = BeautifulSoup(html, 'lxml')
             for maindiv in soup.find_all('div', class_='yt-lockup-content'):
@@ -142,6 +143,6 @@ def ScrapeYT(search_queries, decoded_queries):
                 encoded_description = description.encode('utf-8')
                 description = unidecode(description)
                 res_id = urllib.unquote_plus(link[link.find('v=')+2:])
-                results.append({'query':query, 'decoded_query': decoded_query,'candidate':{'title':title, 'encoded_title': encoded_title, 'duration':duration, 'link':link, 'id': res_id, 'uploader_name':upl_name, 'uploader_link':upl_link, 'age':age, 'views':views, 'description':description, 'encoded_description':encoded_description}})
-    return results
+                res = {'query_term':query.getTerm(), 'query_type':query.getType(), 'query_num_pages':query.getNumPages(), 'query_tuple_str':query.stringify(), 'candidate':{'title':title, 'encoded_title': encoded_title, 'duration':duration, 'link':link, 'id': res_id, 'uploader_name':upl_name, 'uploader_link':upl_link, 'age':age, 'views':views, 'description':description, 'encoded_description':encoded_description}}
+                yield res
 

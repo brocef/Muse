@@ -25,4 +25,5 @@ class TBTYQuery:
     def getNumPages(self):
         return self.q_pages
 
-
+    def asTuple(self):
+        return (self.q_term, self.q_type, self.q_pages)
