@@ -27,6 +27,7 @@ class MuseCaravan(MuseWorker.MuseWorker):
 
     def youtube_dl_progress(self, status):
         if status['status'] == 'downloading':
+            print status
             self.prog_cb('Downloading', cur_pct=status['downloaded_bytes']/status['total_bytes'])
         elif status['status'] == 'error':
             pass

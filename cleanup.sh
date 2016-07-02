@@ -2,15 +2,24 @@
 
 COUNT=0
 for i in *.mp3; do
-    rm "${i}"
-    let COUNT=COUNT+1
+    if [ $i != "*.mp3" ]
+    then
+        rm "${i}"
+        let COUNT=COUNT+1
+    fi
 done
 for i in *.part; do
-    rm "${i}"
-    let COUNT=COUNT+1
+    if [ $i != "*.part" ]
+    then
+        rm "${i}"
+        let COUNT=COUNT+1
+    fi
 done
 for i in _v*.mp4; do
-    rm "${i}"
-    let COUNT=COUNT+1
+    if [ $i != "_v*.mp4" ]
+    then
+        rm "${i}"
+        let COUNT=COUNT+1
+    fi
 done
 echo "Removed ${COUNT} files"
