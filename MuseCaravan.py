@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 import MuseWorker
 import youtube_dl
+import os
 
 class MuseCaravan(MuseWorker.MuseWorker):
     def process(self, yt_result, prog_cb):
@@ -15,20 +16,19 @@ class MuseCaravan(MuseWorker.MuseWorker):
             'quiet': True,
             'ignorecopyright': True,
             'ignoreerrors': True,
-            'outtmpl': u'_v%(id)s.mp4'
+            'outtmpl': unicode(os.path.join(self.config.cur_session_dir, '_v%(id)s.mp4'))
         }
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download(['https://youtube.com%s' % yt_result['candidate']['link']])
-            yt_result['mp4_name'] = '_v%s.mp4' % yt_result['candidate']['id']
-            yt_result['mp3_name'] = '_v%s.mp3' % yt_result['candidate']['id']
+            yt_result['mp4_name'] = os.path.join(self.config.cur_session_dir, '_v%s.mp4' % yt_result['candidate']['id'])
+            yt_result['mp3_name'] = os.path.join(self.config.cur_session_dir, '_v%s.mp3' % yt_result['candidate']['id'])
             return [yt_result]
         print 'Youtube_dl failed on '+str(yt_result)
         return None
 
     def youtube_dl_progress(self, status):
         if status['status'] == 'downloading':
-            print status
-            self.prog_cb('Downloading', cur_pct=status['downloaded_bytes']/status['total_bytes'])
+            self.prog_cb('Downloading', cur_pct=float(status['_percent_str'][:-1])/100.0)
         elif status['status'] == 'error':
             pass
         elif status['status'] == 'finished':

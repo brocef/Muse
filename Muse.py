@@ -76,11 +76,11 @@ def SafeParseQuery(query):
 def ParseArgs():
     parser = argparse.ArgumentParser(prog='Muse')
     parser.add_argument('-D --home-dir', dest='home_dir', metavar='HOME_DIR_PATH', default=DEFAULT_HOME_DIR, help='The directory in which Muse stage folders are created (default %(default)s)')
+    parser.add_argument('-F --final-stage', dest='terminal_stage_name', choices=STAGES, default=STAGES[len(STAGES)-1], help='The stage %(prog)s should finish with (default %(default)s)')
 
     subparsers = parser.add_subparsers(dest='mode', help='Subparser help')
     discover_parser = subparsers.add_parser('discover', help='discover help')
     #discover_parser.add_argument('-S --start-stage', dest='initial_stage', choices=STAGES, default=STAGES[0], help='The stage %(prog)s should start with (default %(default)r)')
-    discover_parser.add_argument('-F --final-stage', dest='terminal_stage_name', choices=STAGES, default=STAGES[len(STAGES)-1], help='The stage %(prog)s should finish with (default %(default)s)')
     discover_parser.add_argument('queries', nargs='+', type=ParseQuery, metavar='Query:QUERY TYPE:Approx Result Count', help='Search queries to use when scraping YouTube. You can also improve accuracy of the scraper by tagging your query type in the following form: Q:{Artist,Track,Album,*}:N. For example, RZA:Artist:10 would start a search for a maximum of 10 candidate tracks of the Artist, RZA. Big Boi:*:10 for any video from the query Big Boi.')
 
     resume_parser = subparsers.add_parser('resume', help='resume help')
@@ -91,8 +91,7 @@ def ParseArgs():
     #        help='Resume a past session instead of starting a new one with a new query.')
     
     args = parser.parse_args()
-    if args.mode == 'discover':
-        args.terminal_stage = STAGE_INDEX_MAP[args.terminal_stage_name]
+    args.terminal_stage = STAGE_INDEX_MAP[args.terminal_stage_name]
     #if not args.resume:
     #    if not reduce(lambda acc, x: acc and SafeParseQuery(x), args.queries, True):
     #        parser.print_help()
@@ -227,8 +226,8 @@ class Muse(object):
         self.progress_lock = threading.Lock()
         self.cur_pct = 0.0
         self.status_str = 'Initializing...'
-        self.all_stages = self.config.getStages()
-        self.cur_stage = self.all_stages[0]-1
+        self.all_stages = range(0, config.getTerminalStage()+2)
+        self.cur_stage = 0
         self.authors = ['NIT'] + list(WORKER_TYPES)
 
     def progress_hook(self, status_str, cur_pct=None):
@@ -242,13 +241,14 @@ class Muse(object):
     def report_progress(self):
         vis_stages = ''
         for s in self.config.getStages():
-            vis_stages += '[%s]' % ('x' if self.cur_stage >= s else ' ')
-        riprint.pr_okblue('% -60s % +15s' % ('%s %s (%.2f%s)' % (self.authors[self.cur_stage+1], self.status_str, 100.0*float(self.cur_pct), '% done'), vis_stages), True)
+            vis_stages += '[%s]' % (('x' if self.cur_stage > s else 'o') if self.cur_stage >= s else ' ')
+            #vis_stages += '[%s]' % (('x' if self.cur_stage > s else ('o' if self.cur_pct < 1.0 else ' ')) if self.cur_stage >= s else ' ')
+        riprint.pr_okblue('% -60s % +15s' % ('%s %s (%.2f%s)' % (self.authors[self.cur_stage], self.status_str, 100.0*float(self.cur_pct), '% done'), vis_stages), True)
 
     def run(self):
         stage_qs = list()
         workers = list()
-        self.report_progress()
+        self.cur_stage = self.all_stages.pop(0)
 
         stage_qs.append(Queue())
         for i in self.config.getStages():
@@ -261,32 +261,34 @@ class Muse(object):
                 if stage == 0: # Special case, not from an old stage output, but the user
                     for q in self.config.getQueries():
                         stage_qs[0].put(q)
-                    stage_qs[0].put(None)
         elif self.config.resume():
             with open(self.config.manifest_path, 'r') as manifest:
                 stage_imports = pickle.load(manifest)
                 for q_index,data in stage_imports.iteritems():
                     for e in data:
                         stage_qs[q_index].put(e)
-
+        stage_qs[0].put(None)
+        
         map(lambda t: t.start(), workers)
 
+        self.progress_hook('Task completed', cur_pct=1.0)
+        print('')
         #print 'Joining on stage threads'
         for t in workers:
-            self.progress_hook('Task completed', cur_pct=1.0)
-            print('')
             self.cur_stage = self.all_stages.pop(0)
             t.join()
+            self.progress_hook('Task completed', cur_pct=1.0)
+            print('')
             #print '%s has completed its tasks!' % t.getID()
-        self.report_progress()
         print ''
-
         # Save output to appropriately and make the manifest
         stage_results = []
         for q in stage_qs:
             stage_results.insert(0, [])
             while not q.empty():
-                stage_results[0].append(q.get())
+                e = q.get()
+                if e != None:
+                    stage_results[0].append(e)
         stage_results.reverse()
         with open(self.config.manifest_path, "w") as manifest: 
             pickle.dump(dict(enumerate(stage_results)), manifest)
