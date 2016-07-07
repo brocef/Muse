@@ -4,7 +4,7 @@ import acoustid
 from math import log
 
 SCORE_BASE = 1.1
-STRICT = True
+STRICT = False
 STRICT_THRESHOLD = 2
 
 def nilog(x):
@@ -106,7 +106,7 @@ class MuseAgent(MuseWorker.MuseWorker):
                 key, score = ta_pairs.popitem()
                 (track, artist, rid) = key
                 if (q_param == 'Artist' and q not in artist) or (q_param == 'Track' and q not in track):
-                    print('%s only had one result and strict mode was on, so skipping' % yt_result['mp3_name'])
+                    #print('%s only had one result and strict mode was on, so skipping' % yt_result['mp3_name'])
                     return None
 
             ta_avg_scores = []

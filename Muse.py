@@ -19,6 +19,7 @@ from MuseAgent import MuseAgent
 from MuseCaravan import MuseCaravan
 from MuseFriend import MuseFriend
 from MuseBuffer import MuseBuffer
+from MuseUI import MuseUI
 
 SCORE_BASE = 1.1
 
@@ -223,73 +224,147 @@ class MuseConfig(object):
 class Muse(object):
     def __init__(self, config):
         self.config = config
-        self.progress_lock = threading.Lock()
         self.cur_pct = 0.0
-        self.status_str = 'Initializing...'
         self.all_stages = range(0, config.getTerminalStage()+2)
         self.cur_stage = 0
         self.authors = ['NIT'] + list(WORKER_TYPES)
+        self.author_index_map = dict((v, k) for k, v in dict(enumerate(self.authors)).iteritems())
+        self.progs = [0 for x in self.authors]
+        self.status_strs = ['' for x in self.authors]
+        self.ui = MuseUI(self.authors, 9, viewport_width=60, dx=(0, 10), dy=(0, 2))
+        self.set_title('Muse')
+        self.set_subtitle('')
+        for a in xrange(0, len(self.authors)):
+            self.report_module_progress(self.status_strs[a], a)
+            self.report_module_percent(0.0, a)
+        self.set_footer('| ___o| f_t_f | __o|')
 
-    def progress_hook(self, status_str, cur_pct=None):
-        self.progress_lock.acquire()
-        if cur_pct != None:
-            self.cur_pct = cur_pct
-        self.status_str = status_str
-        self.report_progress()
-        self.progress_lock.release()
+    def setProgress(self, line, percent):
+        self.ui.setProgress(line, percent)
+        self.ui.refresh()
 
-    def report_progress(self):
+    def setLineText(self, line, text, worker_id=None):
+        self.ui.setLineText(line, text, worker_id=worker_id)
+        self.ui.refresh()
+
+    def report_module_progress(self, status_str, module_id):
+        self.setLineText(module_id + 2, status_str, worker_id=module_id)
+
+    def report_module_percent(self, percent, module_id):
+        self.setProgress(module_id + 2, percent)
+
+    def module_callback(self, w_id, status_str, percent):
+        w_type = w_id[:3]
+        module_id = self.author_index_map[w_type]
+        self.report_module_progress(status_str, module_id)
+        self.report_module_percent(percent, module_id)
+
+    def set_title(self, title):
+        self.setLineText(0, title)
+
+    def set_subtitle(self, text):
+        self.setLineText(1, text)
+
+    def set_footer(self, text):
+        self.setLineText(8, text)
+
+    #def change_ui_line(self, line, text, worker_id=None):
+    #    return self.ui.setLineText(line, text, worker_id=worker_id)
+
+    #def progress_hook(self, status_str, worker_id, cur_pct=None):
+    #    self.progress_lock.acquire()
+    #    self.status_strs[worker_id] = status_str
+    #    self.ui.setLineText(worker_id+2, status_str, worker_id=worker_id)
+    #    if cur_pct != None:
+    #        self.progs[worker_id] = cur_pct
+    #        self.ui.setProgress(worker_id+2, cur_pct)
+    #    self.report_progress()
+    #    self.progress_lock.release()
+
+    #def report_progress(self):
+    #    self.ui.refresh()
+
+
+
+        '''
         vis_stages = ''
         for s in self.config.getStages():
             vis_stages += '[%s]' % (('x' if self.cur_stage > s else 'o') if self.cur_stage >= s else ' ')
             #vis_stages += '[%s]' % (('x' if self.cur_stage > s else ('o' if self.cur_pct < 1.0 else ' ')) if self.cur_stage >= s else ' ')
         riprint.pr_okblue('% -60s % +15s' % ('%s %s (%.2f%s)' % (self.authors[self.cur_stage], self.status_str, 100.0*float(self.cur_pct), '% done'), vis_stages), True)
-
+        '''
     def run(self):
         stage_qs = list()
         workers = list()
         self.cur_stage = self.all_stages.pop(0)
-
         stage_qs.append(Queue())
-        for i in self.config.getStages():
+        self.report_module_progress('Initializing Muse', 0)
+        self.report_module_percent(0.0, 0)
+        for i in xrange(0, len(self.config.getStages())):#self.config.getStages():
+            #prog_cb = lambda status, cur_pct: self.progress_hook(status, i+1, cur_pct)
             stage_qs.append(Queue())
+            #prog_cb('test', 0.5)
             w_id = '%s%02d' % (WORKER_TYPES[i], i)
-            workers.append(STAGE_CONSTRS[i](self.config, w_id, stage_qs[i], stage_qs[i+1], self.progress_hook))
-
+            workers.append(STAGE_CONSTRS[i](self.config, w_id, stage_qs[i], stage_qs[i+1], self.module_callback))
+        
         if self.config.discover():
             for stage in self.config.getStages():
                 if stage == 0: # Special case, not from an old stage output, but the user
                     for q in self.config.getQueries():
                         stage_qs[0].put(q)
+            stage_qs[0].put(None)
+            stage_qs[0].put(stage_qs[0].qsize() - 1)
         elif self.config.resume():
             with open(self.config.manifest_path, 'r') as manifest:
                 stage_imports = pickle.load(manifest)
                 for q_index,data in stage_imports.iteritems():
                     for e in data:
                         stage_qs[q_index].put(e)
-        stage_qs[0].put(None)
-        
+        #workers[1].testReport()
+        #return
         map(lambda t: t.start(), workers)
 
-        self.progress_hook('Task completed', cur_pct=1.0)
-        print('')
+        self.report_module_progress('Initialization complete', 0)
+        self.report_module_percent(1.0, 0)
         #print 'Joining on stage threads'
+        self.report_module_progress('-MODULE SHUTDOWN-', self.cur_stage)
+        self.report_module_percent(('---%', '%d item(s)' % (0 if not self.config.discover() else len(self.config.getQueries()))), self.cur_stage)
         for t in workers:
-            self.cur_stage = self.all_stages.pop(0)
             t.join()
-            self.progress_hook('Task completed', cur_pct=1.0)
-            print('')
+            self.cur_stage = self.all_stages.pop(0)
+            #self.report_module_progress('-MODULE SHUTDOWN-', self.cur_stage)
             #print '%s has completed its tasks!' % t.getID()
-        print ''
         # Save output to appropriately and make the manifest
         stage_results = []
+        
+        eval_results = self.config.getTerminalStage() == STAGE_INDEX_MAP['import'] or self.config.getTerminalStage() == STAGE_INDEX_MAP['identify']
+        _stage = 0
+        hits = 0
+        misses = 0
+        item_count = 0
         for q in stage_qs:
             stage_results.insert(0, [])
             while not q.empty():
                 e = q.get()
-                if e != None:
+                if e == None:
                     stage_results[0].append(e)
+                    e = q.get()
+                elif _stage == self.config.getTerminalStage()+1:
+                    item_count += 1
+                    if eval_results and 'evaluated' not in e:
+                        if 'identity' in e:
+                            hits += 1
+                        else:
+                            misses += 1
+                        e['evaluated'] = True
+                stage_results[0].append(e)
+            _stage += 1
         stage_results.reverse()
+    
+        if eval_results:
+            self.set_subtitle('  executuion completed - %d hits, %d misses' % (hits, misses))
+        else:
+            self.set_subtitle('  execution completed - %d items processed' % (item_count))
         with open(self.config.manifest_path, "w") as manifest: 
             pickle.dump(dict(enumerate(stage_results)), manifest)
 

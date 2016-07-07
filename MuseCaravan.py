@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 import MuseWorker
 import youtube_dl
 import os
+import sys
 
 class MuseCaravan(MuseWorker.MuseWorker):
     def process(self, yt_result, prog_cb):
@@ -26,13 +27,17 @@ class MuseCaravan(MuseWorker.MuseWorker):
         print 'Youtube_dl failed on '+str(yt_result)
         return None
 
+    def estimateProb(self):
+        return super(MuseCaravan, self).estimateProb()
+
     def youtube_dl_progress(self, status):
         if status['status'] == 'downloading':
-            self.prog_cb('Downloading', cur_pct=float(status['_percent_str'][:-1])/100.0)
+            #pct = float(status['_percent_str'][:-1])/100.0
+            self.prog_cb('Downloading (%s)' % status['_percent_str'])
         elif status['status'] == 'error':
-            pass
+            self.err_cb('Error while downloading!', error=-1.0)
         elif status['status'] == 'finished':
-            self.prog_cb('Finished downloading', cur_pct=1.0)
+            self.prog_cb('Finished downloading')
         else:
             raise Exception('Invalid progress hook '+str(status))
 
@@ -46,7 +51,7 @@ class MuseCaravan(MuseWorker.MuseWorker):
 
     def error(self, msg):
         print 'ERROR: %s' % (msg)
-
+        sys.exit(1)
 '''
 status_ticker = 0
 current_vid = 0

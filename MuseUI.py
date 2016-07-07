@@ -6,36 +6,42 @@ import random
 import time
 import MuseWorker 
 
-WORKER_TYPES = ['NIT'] + list(MuseWorker.WORKER_TYPES)
+#WORKER_TYPES = ['NIT'] + list(MuseWorker.WORKER_TYPES)
 
 _print = lambda s: print(s, end='')
 
 class MuseUI:
-    def __init__(self, viewport_height, viewport_width=40, dx=(1, 10), dy=(0,2)):
+    def __init__(self, module_names, viewport_height, viewport_width=40, dx=(1, 10), dy=(0,2)):
+        self.MODULES = module_names
         self.height = viewport_height
         self.width = viewport_width
         self.term = Terminal()
         self.lines = ['' for i in xrange(0, viewport_height)]
         self.percents = [None for i in xrange(0, viewport_height)]
-        self.print_lock = threading.Lock()
+        self._lock = threading.Lock()
         self.viewport = (dx, dy)
         self.dx = dx
         self.dy = dy
         self.calculateEffectiveViewport()
         self._count = 0
+        self._has_prepped = False
+        assert(len(module_names) == 6)
         self.ACTIVE_COLORS = (self.term.cyan, self.term.yellow, self.term.magenta, self.term.blue, self.term.green, self.term.red)
-        self.WORKER_NAME_STRS = ['%s' % self.ACTIVE_COLORS[worker](WORKER_TYPES[worker]) for worker in xrange(0, len(WORKER_TYPES))]
+        self.WORKER_NAME_STRS = ['%s' % self.ACTIVE_COLORS[worker](self.MODULES[worker]) for worker in xrange(0, len(self.MODULES))]
         self.worker_ids = [None for i in xrange(0, self.height)]
 
         self.prog_format = '%3d%%[%s%s]'
+        self.err_prog_format = '%3s%%[%s%s]'
+        self.custom_prog_format = '%4s[%-10s]'
         self.prog_len = 16
         self.worker_format = '[%s] '
         self.worker_len = 6
-
+        
         self.line_len = self.eff_width - (self.prog_len + self.worker_len)
         self.line_format = '%-' + str(self.line_len) + 's%+16s'
 
         self.final_format = '%s%s'# % (self.worker_format, self.line_format, self.prog_format)
+        self.prepareTerm()
 
     def calculateEffectiveViewport(self):
         (dx_min, dx_max) = self.dx
@@ -65,28 +71,50 @@ class MuseUI:
         return self.term
 
     def prepareTerm(self):
+        self._lock.acquire()
         (dx, dy) = self.eff_viewport
         for i in xrange(0, self.height+2*dy):
             print('')
+        self._has_prepped = True
+        self._lock.release()
 
     def setProgress(self, line, percent):
-        self.percents[line] = percent
+        if line >= len(self.percents):
+            print(line)
+            print(self.percents)
+            sys.exit(1)
+        self._lock.acquire()
+        if percent == None:
+            self.percents[line] = None
+        else:
+            if type(percent) == float or type(percent) == int:
+                self.percents[line] = percent*100.0
+            else:
+                self.percents[line] = percent
+        self._lock.release()
 
     def setLineText(self, line, text, worker_id=None):
+        self._lock.acquire()
         self.lines[line] = text
         self.worker_ids[line] = worker_id
+        self._lock.release()
 
     def refresh(self):
-        self.print_lock.acquire()
+        self._lock.acquire()
         (dx, dy) = self.eff_viewport
         with self.term.location():
             _print(self.term.move_up * (self.height + dy))
-            _print(self.term.clear_eos)
             for i in xrange(0, self.height):
                 _print(' ' * dx)
                 using_prog = self.percents[i] != None
                 if using_prog:
-                    prog = self.prog_format % (self.percents[i], '=' * (self.percents[i]/10), ' ' * (10-(self.percents[i]/10)))
+                    if type(self.percents[i]) == float or type(self.percents[i]) == int:
+                        if self.percents[i] < 0.0:
+                            prog = self.err_prog_format % ('???', '!! %01.2f !!' % (self.percents[i] / -100.0), '')
+                        else:
+                            prog = self.prog_format % (self.percents[i], '=' * int(self.percents[i]/10), ' ' * (10-int(self.percents[i]/10)))
+                    else:
+                        prog = self.custom_prog_format % self.percents[i]
                 else:
                     prog = ''
                 line = self.lines[i]
@@ -110,23 +138,23 @@ class MuseUI:
             _print(self.term.move_down * dy)
             self._count += 1
         sys.stdout.flush()
-        self.print_lock.release()
-
+        self._lock.release()
+'''
 ui = MuseUI(9, viewport_width=60, dx=(0, 10), dy=(0, 2))
 ui.setLineText(0, 'Fuck yeah boi! ' * 10)
 ui.setLineText(1, 'Made by f_t_f')
-for i in xrange(0, len(WORKER_TYPES)):
+for i in xrange(0, len(MODULES)):
     status = 'STATUS: %s' % ('Unknown')
     ui.setLineText(i+2, status)
     ui.setProgress(i+2, 0)
-ui.setLineText(2+len(WORKER_TYPES), 'Footer')
+ui.setLineText(2+len(MODULES), 'Footer')
 ui.prepareTerm()
 ui.refresh()
 time.sleep(1)
 
 for i in xrange(0, 21):
     ui.setLineText(0, 'Real count %d' % i * 10)
-    for j in xrange(0, len(WORKER_TYPES)):
+    for j in xrange(0, len(MODULES)):
         if i <= 10:
             ui.setProgress(j+2, i*10)
         else:
@@ -134,4 +162,4 @@ for i in xrange(0, 21):
         ui.setLineText(j+2, 'At iteration %d' % (50*i) * 10, worker_id=j)
     ui.refresh()
     time.sleep(0.25)
-
+'''
