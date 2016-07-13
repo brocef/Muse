@@ -93,6 +93,16 @@ class MuseUI:
                 self.percents[line] = percent
         self._lock.release()
 
+    def setLineTextCustom(self, line, text, custom):
+        if custom == 'center':
+            text = text[:min(len(text), self.eff_width)]
+            dw = float(self.eff_width - len(text))
+            left = int(0.5 + dw / 2.0)
+            right = int(dw / 2.0)
+            text = ' ' * left + text + ' ' * right
+
+        self.setLineText(line, text)
+
     def setLineText(self, line, text, worker_id=None):
         self._lock.acquire()
         self.lines[line] = text
@@ -115,6 +125,7 @@ class MuseUI:
                             prog = self.prog_format % (self.percents[i], '=' * int(self.percents[i]/10), ' ' * (10-int(self.percents[i]/10)))
                     else:
                         prog = self.custom_prog_format % self.percents[i]
+                    prog = prog[:min(len(prog), self.prog_len)]
                 else:
                     prog = ''
                 line = self.lines[i]
@@ -139,27 +150,4 @@ class MuseUI:
             self._count += 1
         sys.stdout.flush()
         self._lock.release()
-'''
-ui = MuseUI(9, viewport_width=60, dx=(0, 10), dy=(0, 2))
-ui.setLineText(0, 'Fuck yeah boi! ' * 10)
-ui.setLineText(1, 'Made by f_t_f')
-for i in xrange(0, len(MODULES)):
-    status = 'STATUS: %s' % ('Unknown')
-    ui.setLineText(i+2, status)
-    ui.setProgress(i+2, 0)
-ui.setLineText(2+len(MODULES), 'Footer')
-ui.prepareTerm()
-ui.refresh()
-time.sleep(1)
 
-for i in xrange(0, 21):
-    ui.setLineText(0, 'Real count %d' % i * 10)
-    for j in xrange(0, len(MODULES)):
-        if i <= 10:
-            ui.setProgress(j+2, i*10)
-        else:
-            ui.setProgress(j+2, 200-i*10)
-        ui.setLineText(j+2, 'At iteration %d' % (50*i) * 10, worker_id=j)
-    ui.refresh()
-    time.sleep(0.25)
-'''

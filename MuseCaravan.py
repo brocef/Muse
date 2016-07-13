@@ -5,27 +5,53 @@ import os
 import sys
 
 class MuseCaravan(MuseWorker.MuseWorker):
+    def __init__(self, *args):
+        super(MuseCaravan, self).__init__(*args)
+        self.video_count = 0
+        self.name_format = '_v%s_%s_%s' % ('%s', self.w_id, '%04d.%s')
+    
     def process(self, yt_result, prog_cb):
         self.prog_cb = prog_cb
+        mp4n = self.name_format % (yt_result['candidate']['id'], self.video_count, 'mp4')
+        mp3n = self.name_format % (yt_result['candidate']['id'], self.video_count, 'mp3')
+        yt_result['mp4_name'] = mp4n
+        yt_result['mp3_name'] = mp3n
+
         ydl_opts = {
             'logger': self,
             'progress_hooks': [self.youtube_dl_progress],
-            #'playliststart': 1,
-            #'playlistend': 5,
-            #'match_filter': match_fitness,
             'verbose': False,
             'quiet': True,
             'ignorecopyright': True,
             'ignoreerrors': True,
-            'outtmpl': unicode(os.path.join(self.config.cur_session_dir, '_v%(id)s.mp4'))
+            'outtmpl': unicode(os.path.join(self.config.cur_session_dir, yt_result['mp4_name']))
         }
+        yt_result['CVN'] = 'download_failure'
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download(['https://youtube.com%s' % yt_result['candidate']['link']])
-            yt_result['mp4_name'] = os.path.join(self.config.cur_session_dir, '_v%s.mp4' % yt_result['candidate']['id'])
-            yt_result['mp3_name'] = os.path.join(self.config.cur_session_dir, '_v%s.mp3' % yt_result['candidate']['id'])
-            return [yt_result]
-        print 'Youtube_dl failed on '+str(yt_result)
-        return None
+            #mp4n = '_v%s.mp4' % yt_result['candidate']['id']
+            #mp3n = '_v%s.mp3' % yt_result['candidate']['id']
+            mp4path = unicode(os.path.join(self.config.cur_session_dir, mp4n))
+            mp3path = unicode(os.path.join(self.config.cur_session_dir, mp3n))
+            if os.path.isfile(mp4path):
+                # File already exists... how?
+                # TODO: track this down
+                yt_result['CVN'] = 'download_duplicate_failure'
+            elif ydl.download(['https://youtube.com%s' % yt_result['candidate']['link']]) == 0:
+                yt_result['mp3_path'] = mp3path
+                yt_result['mp4_path'] = mp4path
+                if os.path.isfile(yt_result['mp4_path']):
+                    yt_result['CVN'] = 'download_success'
+                else:
+                    del yt_result['mp4_name']
+                    del yt_result['mp3_name']
+                    del yt_result['mp3_path']
+                    del yt_result['mp4_path']
+                    yt_result['CVN'] = 'download_failure'
+
+        self.video_count += 1
+        yield yt_result
+        #print 'Youtube_dl failed on '+str(yt_result)
+        #yield None
 
     def estimateProb(self):
         return super(MuseCaravan, self).estimateProb()
@@ -47,11 +73,12 @@ class MuseCaravan(MuseWorker.MuseWorker):
 
     def warning(self, msg):
         #print 'WARNING: %s' % (msg)
-        pass
+        self.eprint(msg)
 
     def error(self, msg):
-        print 'ERROR: %s' % (msg)
-        sys.exit(1)
+        # print 'ERROR: %s' % (msg)
+        # sys.exit(1)
+        self.eprint(msg)
 '''
 status_ticker = 0
 current_vid = 0

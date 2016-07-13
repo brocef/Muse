@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup, NavigableString
 import re
 from unidecode import unidecode
 import MuseWorker
+import math
 
 '''
     Initialized with a list of MuseQuery objects, as part of the config
@@ -16,17 +17,31 @@ search_url = 'https://www.youtube.com/results?search_query=%s'
 page_search_url = 'https://www.youtube.com/results?search_query=%s&page=%d'
 
 class MuseScout(MuseWorker.MuseWorker):
+    def __init__(self, *args):
+        super(MuseScout, self).__init__(*args)
+        self._did_num_in_mult = False
+
     def process(self, query, prog_cb):
-        for result in self.ScrapeYT(query):
+        if not self._did_num_in_mult and self._num_in > 0:
+            self._num_in = 0
+            for q in self.config.getQueries():
+                self._num_in += 20 * q.getNum()
+            self._did_num_in_mult = True
+        prog_cb('Performing Queries')
+        for result in self.ScrapeYT(query, prog_cb):
             yield result
 
     def simScrapeYT(self, query):
         return query
 
-    def ScrapeYT(self, query):
+    def ScrapeYT(self, query, prog_cb):
         parser = etree.XMLParser(recover=True)
-        (query_str, q_type, pages) = query.asTuple()
-        enc_query_str = query.getURLTerm()
+        #(query_str, q_type, pages) = query.asTuple()
+        query_str = query.getQuery()
+        q_terms = query.getTerms()
+        pages = query.getNum()
+        enc_query_str = query.getURLQuery()
+        count = 0
         for page in xrange(1, pages+1):
             target = None
             if page == 1:
@@ -36,7 +51,10 @@ class MuseScout(MuseWorker.MuseWorker):
             response = urllib2.urlopen(target)
             html = response.read()
             soup = BeautifulSoup(html, 'lxml')
-            for maindiv in soup.find_all('div', class_='yt-lockup-content'):
+            itercount = 0
+            for maindiv in soup.find_all('div', {'class':'yt-lockup-content'}):
+                self.eprint('iter'+str(itercount)+'page'+str(page))
+                itercount += 1
                 title = None
                 duration = None # in seconds
                 link = None
@@ -112,13 +130,20 @@ class MuseScout(MuseWorker.MuseWorker):
 
                         elif mainchild.name == 'div' and 'yt-lockup-description' in mainchild['class']:
                             # description
-                            description = reduce(lambda prev, y: prev + y.string, mainchild.children, '')
+                            try:
+                                description = reduce(lambda prev, y: prev + y.string, mainchild.children, '')
+                            except TypeError:
+                                continue
                             checksum = checksum ^ int('1000', 2)
                 except KeyError as err:
-                    my_logger.error('KeyError - '+str(err))
+                    self.eprint('KeyError - '+str(err))
+                    continue
 
                 if checksum != int('1111', 2):
+                    self.eprint('checksum failure')
                     continue
+                
+                count += 1
                 
                 if _DEBUG:
                     print '---'
@@ -131,9 +156,11 @@ class MuseScout(MuseWorker.MuseWorker):
                     print description
 
                 if len(title) == 0:
+                    self.eprint('title len failure')
                     continue
 
                 if int(duration) > 7 * 60:
+                    self.eprint('duration exceeded failure')
                     continue
                 
                 (upl_name, upl_link) = uploader
@@ -143,6 +170,8 @@ class MuseScout(MuseWorker.MuseWorker):
                 encoded_description = description.encode('utf-8')
                 description = unidecode(description)
                 res_id = urllib.unquote_plus(link[link.find('v=')+2:])
-                res = {'query_term':query.getTerm(), 'query_type':query.getType(), 'query_num_pages':query.getNumPages(), 'query_tuple_str':query.stringify(), 'candidate':{'title':title, 'encoded_title': encoded_title, 'duration':duration, 'link':link, 'id': res_id, 'uploader_name':upl_name, 'uploader_link':upl_link, 'age':age, 'views':views, 'description':description, 'encoded_description':encoded_description}}
+                res = {'query_terms':query.getTerms(), 'query':query.getQuery(), 'query_num_pages':query.getNum(), 'candidate':{'title':title, 'encoded_title': encoded_title, 'duration':duration, 'link':link, 'id': res_id, 'uploader_name':upl_name, 'uploader_link':upl_link, 'age':age, 'views':views, 'description':description, 'encoded_description':encoded_description}}
+                pct = math.atan(3.0*(count+1)/(20*pages+1))*100.0/math.pi*2
+                prog_cb('Searching for Video Candidates (%01.2f%%)' % pct)
                 yield res
 
