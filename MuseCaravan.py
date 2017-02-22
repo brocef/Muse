@@ -24,6 +24,8 @@ class MuseCaravan(MuseWorker.MuseWorker):
             'quiet': True,
             'ignorecopyright': True,
             'ignoreerrors': True,
+            'merge_output_format': 'mp4',
+            'format': 'mp4',
             'outtmpl': unicode(os.path.join(self.config.cur_session_dir, yt_result['mp4_name']))
         }
         yt_result['CVN'] = 'download_failure'

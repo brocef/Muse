@@ -1,0 +1,10 @@
+*.swp
+*.swo
+*~
+
+*.err
+*.out
+
+Muse/*
+
+*.pyc

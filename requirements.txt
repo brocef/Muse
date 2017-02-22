@@ -1,0 +1,9 @@
+Unidecode
+argparse
+audioread
+beautifulsoup4
+blessings
+eyeD3
+pyacoustid
+youtube-dl
+lxml
