@@ -11,13 +11,13 @@ import datetime
 import pickle
 from StringIO import StringIO
 
-from MuseWorker import MuseWorker, WORKER_TYPES, WORKER_TYPE_MAP
-from MuseQuery import QUERY_TYPES, MuseQuery
+from worker import worker, WORKER_TYPES, WORKER_TYPE_MAP
+from query import QUERY_TYPES, query
 from MuseScout import MuseScout
 from MuseDoctor import MuseDoctor
 from MuseAgent import MuseAgent
 from MuseCaravan import MuseCaravan
-from MuseFriend import MuseFriend
+from friend import friend
 from MuseBuffer import MuseBuffer
 from MuseUI import MuseUI
 from MuseSessionCompiler import MuseSessionCompiler
@@ -32,7 +32,7 @@ def similar(a, b):
 
 STAGES = ('search', 'video', 'extract', 'identify', 'import')
 W_TYPE_STG_MAP = dict(zip(WORKER_TYPES, STAGES))
-STAGE_CLASSES = (MuseScout, MuseCaravan, MuseDoctor, MuseAgent, MuseFriend)
+STAGE_CLASSES = (MuseScout, MuseCaravan, MuseDoctor, MuseAgent, friend)
 STAGE_INDEX_MAP = {stage:index for (index, stage) in list(enumerate(STAGES))}
 
 DEFAULT_HOME_DIR = os.path.join(os.getcwd(), 'Muse')
@@ -71,7 +71,7 @@ def ParseQuery(query):
                     err = 'The query term must be of the correct form {Query:[Artist,Track,Album]}'
                     raise argparse.ArgumentTypeError(err)
         clean_query = clean_query[1:]
-        return MuseQuery(clean_query, terms, num)
+        return query(clean_query, terms, num)
     else:
         err = 'The query must be similar to the following form: {Queen:Artist} Lyric Videos:5'
         raise argparse.ArgumentTypeError(err)

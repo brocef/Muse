@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
-import MuseWorker
+import worker
 import youtube_dl
 import os
 import sys
 
-class MuseCaravan(MuseWorker.MuseWorker):
+class MuseCaravan(worker.worker):
     def __init__(self, *args):
         super(MuseCaravan, self).__init__(*args)
         self.video_count = 0

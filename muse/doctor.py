@@ -1,4 +1,4 @@
-import MuseWorker
+import worker
 import os
 import subprocess
 import time
@@ -6,7 +6,7 @@ import sys
 import re
 import math
 
-class MuseDoctor(MuseWorker.MuseWorker):
+class MuseDoctor(worker.worker):
     def process(self, yt_result_pc, prog_cb):
         if yt_result_pc['CVN'] == 'download_success':
             mp4n = yt_result_pc['mp4_path']

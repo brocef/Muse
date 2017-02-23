@@ -1,4 +1,4 @@
-import MuseWorker
+from . import worker
 import sys
 import acoustid
 from math import log
@@ -36,7 +36,7 @@ def compare_scores(x, y, query):
         return cmp(x[1],y[1])
     return net_score
 
-class MuseAgent(MuseWorker.MuseWorker):
+class MuseAgent(worker.worker):
     def process(self, yt_result, prog_cb):
         try:
             if yt_result['CVN'] == 'download_success':

@@ -4,11 +4,11 @@ import urllib
 from bs4 import BeautifulSoup, NavigableString
 import re
 from unidecode import unidecode
-import MuseWorker
+from . import worker
 import math
 
 '''
-    Initialized with a list of MuseQuery objects, as part of the config
+    Initialized with a list of query objects, as part of the config
     object, and it writes a list of videos to the Muse server to be downloaded
 '''
 
@@ -16,9 +16,9 @@ _DEBUG = False
 search_url = 'https://www.youtube.com/results?search_query=%s'
 page_search_url = 'https://www.youtube.com/results?search_query=%s&page=%d'
 
-class MuseScout(MuseWorker.MuseWorker):
+class scout(worker.worker):
     def __init__(self, *args):
-        super(MuseScout, self).__init__(*args)
+        super(scout, self).__init__(*args)
         self._did_num_in_mult = False
 
     def process(self, query, prog_cb):

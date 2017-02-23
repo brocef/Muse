@@ -1,10 +1,10 @@
-import MuseWorker
+import worker
 import os
 import subprocess
 
-class MuseFriend(MuseWorker.MuseWorker):
+class friend(worker.worker):
     def __init__(self, *args):
-        super(MuseFriend, self).__init__(*args)
+        super(friend, self).__init__(*args)
         self.name_hist = dict()
         self.greek_alpha = ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega')
         self.greek_inv_alpha = {value: key for (key, value) in enumerate(list(self.greek_alpha))}

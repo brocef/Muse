@@ -2,7 +2,7 @@ import urllib
 
 QUERY_TYPES = ('Artist', 'Track', 'Album')
 
-class MuseQuery:
+class query:
     def __init__(self, query_line, terms, num):
         self._query = query_line
         self._terms = terms

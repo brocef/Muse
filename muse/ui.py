@@ -4,9 +4,9 @@ import sys
 import threading
 import random
 import time
-import MuseWorker 
+import worker 
 
-#WORKER_TYPES = ['NIT'] + list(MuseWorker.WORKER_TYPES)
+#WORKER_TYPES = ['NIT'] + list(worker.WORKER_TYPES)
 
 _print = lambda s: print(s, end='')
 
