@@ -23,6 +23,7 @@ class MuseUI:
         self.dx = dx
         self.dy = dy
         self.calculateEffectiveViewport()
+        self._clear = False
         self._count = 0
         self._has_prepped = False
         assert(len(module_names) == 6)
@@ -109,12 +110,19 @@ class MuseUI:
         self.worker_ids[line] = worker_id
         self._lock.release()
 
+    def clear(self):
+        self._lock.acquire()
+        self._clear = True
+        self._lock.release()
+
     def refresh(self):
         self._lock.acquire()
         (dx, dy) = self.eff_viewport
         with self.term.location():
             _print(self.term.move_up * (self.height + dy))
             for i in xrange(0, self.height):
+                if self._clear:
+                    continue
                 _print(' ' * dx)
                 using_prog = self.percents[i] != None
                 if using_prog:
@@ -148,6 +156,7 @@ class MuseUI:
                 self.term.location(x=0)
             _print(self.term.move_down * dy)
             self._count += 1
+        self._clear = False
         sys.stdout.flush()
         self._lock.release()
 

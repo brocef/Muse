@@ -120,7 +120,7 @@ DEFAULT_CONFIG = {
 class MuseConfig(object):
     def __init__(self, parsed_args):
         self.cfg = parsed_args
-        self.config_path = os.path.join(self.cfg['home_dir'], 'config.txt')
+        self.config_path = os.path.join(self.cfg['home_dir'], '.config')
         from_cfg = self._loadConfig(self.config_path)
         for key,val in from_cfg.iteritems():
             if key not in self.cfg:
@@ -233,7 +233,7 @@ class Muse(object):
         self.status_strs = ['' for x in self.authors]
         self.ui = MuseUI(self.authors, 10, viewport_width=60, dx=(0, 10), dy=(0, 2))
         self.set_title('Muse')
-        self.set_subtitle('')
+        self.set_subtitle(' ' + self.config.session)
         for a in xrange(0, len(self.authors)):
             self.report_module_progress(self.status_strs[a], a)
             self.report_module_percent(0.0, a)
@@ -269,6 +269,10 @@ class Muse(object):
     def set_footer(self, firstline, secondline):
         self.ui.setLineTextCustom(8, firstline, 'center')
         self.ui.setLineTextCustom(9, secondline, 'center')
+        self.ui.refresh()
+
+    def clear_console(self):
+        self.ui.clear()
         self.ui.refresh()
 
     def run(self):
@@ -324,6 +328,7 @@ class Muse(object):
             #print '%s has completed its tasks!' % t.getID()
         # Save output to appropriately and make the manifest
         stage_results = []
+
         
         eval_results = self.config.getTerminalStage() == STAGE_INDEX_MAP['import'] or self.config.getTerminalStage() == STAGE_INDEX_MAP['identify']
         _stage = 0
@@ -356,6 +361,9 @@ class Muse(object):
             self.set_subtitle(' %s - %d hits, %d misses' % (self.config.session, hits, misses))
         else:
             self.set_subtitle(' %s - %d items processed' % (self.config.session, item_count))
+
+        self.clear_console()
+
         with open(self.config.manifest_path, "w") as manifest: 
             pickle.dump(dict(enumerate(stage_results)), manifest)
 
