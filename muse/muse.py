@@ -15,11 +15,10 @@ from worker import worker, WORKER_TYPES, WORKER_TYPE_MAP
 from query import QUERY_TYPES, query
 from MuseScout import MuseScout
 from MuseDoctor import MuseDoctor
-from MuseAgent import MuseAgent
-from MuseCaravan import MuseCaravan
+from Agent import Agent
+from Caravan import Caravan
 from friend import friend
-from MuseBuffer import MuseBuffer
-from MuseUI import MuseUI
+from consoleui import ConsoleUI
 from MuseSessionCompiler import MuseSessionCompiler
 
 SCORE_BASE = 1.1
@@ -32,7 +31,7 @@ def similar(a, b):
 
 STAGES = ('search', 'video', 'extract', 'identify', 'import')
 W_TYPE_STG_MAP = dict(zip(WORKER_TYPES, STAGES))
-STAGE_CLASSES = (MuseScout, MuseCaravan, MuseDoctor, MuseAgent, friend)
+STAGE_CLASSES = (MuseScout, Caravan, MuseDoctor, Agent, friend)
 STAGE_INDEX_MAP = {stage:index for (index, stage) in list(enumerate(STAGES))}
 
 DEFAULT_HOME_DIR = os.path.join(os.getcwd(), 'Muse')
@@ -117,7 +116,7 @@ DEFAULT_CONFIG = {
     'sessions_dir': DEFAULT_SESSIONS_DIR,
     'terminal_stage': STAGES[len(STAGES)-1]
 }
-class MuseConfig(object):
+class Config(object):
     def __init__(self, parsed_args):
         self.cfg = parsed_args
         self.config_path = os.path.join(self.cfg['home_dir'], '.config')
@@ -166,13 +165,13 @@ class MuseConfig(object):
             pickle.dump(self.cfg, config)
 
     def _ensureSystemResources(self):
-        MuseConfig._ensureDirCreation(self.home_dir)
-        MuseConfig._ensureDirCreation(self.sessions_dir)
+        Config._ensureDirCreation(self.home_dir)
+        Config._ensureDirCreation(self.sessions_dir)
         if self.cur_session_dir:
-            MuseConfig._ensureDirCreation(self.cur_session_dir)
-            MuseConfig._ensureDirCreation(self.session_unk_dir)
+            Config._ensureDirCreation(self.cur_session_dir)
+            Config._ensureDirCreation(self.session_unk_dir)
         if self.mode == 'resume':
-            MuseConfig._ensureFileExists(self.manifest_path)
+            Config._ensureFileExists(self.manifest_path)
         elif self.mode == 'discover':
             pass
         elif self.mode == 'compile':
@@ -231,7 +230,7 @@ class Muse(object):
         self.author_index_map = dict((v, k) for k, v in dict(enumerate(self.authors)).iteritems())
         self.progs = [0 for x in self.authors]
         self.status_strs = ['' for x in self.authors]
-        self.ui = MuseUI(self.authors, 10, viewport_width=60, dx=(0, 10), dy=(0, 2))
+        self.ui = ConsoleUI(self.authors, 10, viewport_width=60, dx=(0, 10), dy=(0, 2))
         self.set_title('Muse')
         self.set_subtitle(' ' + self.config.session)
         for a in xrange(0, len(self.authors)):
@@ -370,7 +369,7 @@ class Muse(object):
         self.config.saveConfig()
 
 if __name__ == '__main__':
-    config = MuseConfig(ParseArgs())
+    config = Config(ParseArgs())
     if config.compile_sessions:
         compiler = MuseSessionCompiler(config)
         compiler.run()

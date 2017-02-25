@@ -36,7 +36,7 @@ def compare_scores(x, y, query):
         return cmp(x[1],y[1])
     return net_score
 
-class MuseAgent(worker.worker):
+class Agent(worker.Worker):
     def process(self, yt_result, prog_cb):
         try:
             if yt_result['CVN'] == 'download_success':

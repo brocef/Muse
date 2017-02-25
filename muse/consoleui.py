@@ -10,7 +10,7 @@ import worker
 
 _print = lambda s: print(s, end='')
 
-class MuseUI:
+class ConsoleUI:
     def __init__(self, module_names, viewport_height, viewport_width=40, dx=(1, 10), dy=(0,2)):
         self.MODULES = module_names
         self.height = viewport_height

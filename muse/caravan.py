@@ -4,9 +4,9 @@ import youtube_dl
 import os
 import sys
 
-class MuseCaravan(worker.worker):
+class Caravan(worker.Worker):
     def __init__(self, *args):
-        super(MuseCaravan, self).__init__(*args)
+        super(Caravan, self).__init__(*args)
         self.video_count = 0
         self.name_format = '_v%s_%s_%s' % ('%s', self.w_id, '%04d.%s')
     
@@ -56,7 +56,7 @@ class MuseCaravan(worker.worker):
         #yield None
 
     def estimateProb(self):
-        return super(MuseCaravan, self).estimateProb()
+        return super(Caravan, self).estimateProb()
 
     def youtube_dl_progress(self, status):
         if status['status'] == 'downloading':

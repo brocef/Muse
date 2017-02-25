@@ -6,7 +6,7 @@ import sys
 import re
 import math
 
-class MuseDoctor(worker.worker):
+class MuseDoctor(worker.Worker):
     def process(self, yt_result_pc, prog_cb):
         if yt_result_pc['CVN'] == 'download_success':
             mp4n = yt_result_pc['mp4_path']

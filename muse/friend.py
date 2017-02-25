@@ -2,7 +2,7 @@ import worker
 import os
 import subprocess
 
-class friend(worker.worker):
+class friend(worker.Worker):
     def __init__(self, *args):
         super(friend, self).__init__(*args)
         self.name_hist = dict()

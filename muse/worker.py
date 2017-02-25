@@ -8,10 +8,10 @@ WORKER_TYPES = ('SCT', 'CVN', 'DOC', 'AGT', 'FND')
 WORKER_TYPE_ORDER = dict(enumerate(WORKER_TYPES))
 WORKER_TYPE_MAP = dict((v,k) for k,v in WORKER_TYPE_ORDER.iteritems())
 
-class worker(threading.Thread):
+class Worker(threading.Thread):
     __metaclass__ = ABCMeta
     def __init__(self, config, worker_id, input_q, output_q, progress_callback, std_out, std_err):
-        super(worker, self).__init__()
+        super(Worker, self).__init__()
         self.config = config
         self.w_id = worker_id
         self.w_num = int(self.w_id[3:])+1
