@@ -11,6 +11,7 @@ import datetime
 import pickle
 from StringIO import StringIO
 
+from config import Config, STAGES
 from worker import worker, WORKER_TYPES, WORKER_TYPE_MAP
 from query import QUERY_TYPES, query
 from scout import Scout
@@ -29,13 +30,9 @@ def nilog(x):
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
-STAGES = ('search', 'video', 'extract', 'identify', 'import')
 W_TYPE_STG_MAP = dict(zip(WORKER_TYPES, STAGES))
 STAGE_CLASSES = (Scout, Caravan, Doctor, Agent, Friend)
 STAGE_INDEX_MAP = {stage:index for (index, stage) in list(enumerate(STAGES))}
-
-DEFAULT_HOME_DIR = os.path.join(os.getcwd(), 'Muse')
-DEFAULT_SESSIONS_DIR = os.path.join(DEFAULT_HOME_DIR, 'Sessions')
 
 term_re = re.compile(r'([^:]+):(Artist|Track|Album)')
 def ParseQueryTerm(term):
@@ -51,7 +48,7 @@ def ParseQuery(query):
     if len(query) == 0:
         err = 'The query cannot be an empty string!'
         raise argparse.ArgumentTypeError(err)
-    
+
     m = query_re.match(query)
     if m:
         (query_line, num) = m.groups()
@@ -99,7 +96,7 @@ def ParseArgs():
     #        help='Search queries to use when scraping YouTube or the name of a previous session. You can also improve accuracy of the scraper by tagging your query type in the following form: Q:{Artist,Track,Album,*}:N. For example, RZA:Artist:10 would start a search for a maximum of 10 candidate tracks of the Artist, RZA. Big Boi:*:10 for any video from the query Big Boi.')
     #parser.add_argument('-R --resume', dest='resume', action='store_const', const=True, default=False,
     #        help='Resume a past session instead of starting a new one with a new query.')
-    
+
     args = parser.parse_args()
     args.terminal_stage = STAGE_INDEX_MAP[args.terminal_stage_name]
     #if not args.resume:
@@ -110,115 +107,6 @@ def ParseArgs():
     #if STAGE_INDEX_MAP[args.initial_stage] > STAGE_INDEX_MAP[args.terminal_stage]:
     #    raise argparse.ArgumentTypeError('The final stage cannot happen before the start stage!')
     return vars(args)
-
-DEFAULT_CONFIG = {
-    'home_dir': DEFAULT_HOME_DIR,
-    'sessions_dir': DEFAULT_SESSIONS_DIR,
-    'terminal_stage': STAGES[len(STAGES)-1]
-}
-class Config(object):
-    def __init__(self, parsed_args):
-        self.cfg = parsed_args
-        self.config_path = os.path.join(self.cfg['home_dir'], '.config')
-        from_cfg = self._loadConfig(self.config_path)
-        for key,val in from_cfg.iteritems():
-            if key not in self.cfg:
-                # Overwrite value in cfg
-                self.cfg[key] = val
-
-        for key,val in self.cfg.iteritems():
-            setattr(self, key, val)
-
-
-        self.compile_sessions = False
-        if self.mode == 'discover':
-            self.session = datetime.datetime.now().strftime('%a%j_%H%M%S').upper()
-            self.cur_session_dir = os.path.join(self.sessions_dir, self.session)
-            self.terminal_stage = STAGE_INDEX_MAP[self.terminal_stage_name]
-        elif self.mode == 'resume':
-            self.cur_session_dir = os.path.join(self.sessions_dir, self.session)
-        elif self.mode == 'compile':
-            self.cur_session_dir = False
-            self.compile_sessions = True
-            self.stat_hist_path = os.path.join(self.home_dir, '.session_stats')
-
-        if self.cur_session_dir:
-            self.manifest_path = os.path.join(self.cur_session_dir, 'manifest')
-            self.session_unk_dir = os.path.join(self.cur_session_dir, 'Unknown')
-        self._ensureSystemResources()
-
-    @staticmethod
-    def _loadConfig(configPath):
-        configData = None
-        if os.path.exists(configPath) and os.path.isfile(configPath):
-            with open(configPath, 'r') as config:
-                try:
-                    configData = pickle.load(config)
-                except EOFError:
-                    configData = DEFAULT_CONFIG
-        else:
-            configData = DEFAULT_CONFIG
-        return configData
-
-    def saveConfig(self):
-        with open(self.config_path, 'w') as config:
-            pickle.dump(self.cfg, config)
-
-    def _ensureSystemResources(self):
-        Config._ensureDirCreation(self.home_dir)
-        Config._ensureDirCreation(self.sessions_dir)
-        if self.cur_session_dir:
-            Config._ensureDirCreation(self.cur_session_dir)
-            Config._ensureDirCreation(self.session_unk_dir)
-        if self.mode == 'resume':
-            Config._ensureFileExists(self.manifest_path)
-        elif self.mode == 'discover':
-            pass
-        elif self.mode == 'compile':
-            pass
-
-    @staticmethod
-    def _ensureFileExists(path):
-        assert(os.path.exists(path) and os.path.isfile(path))
-
-    @staticmethod
-    def _ensureDirCreation(path):
-        if os.path.exists(path):
-            if not os.path.isdir(path):
-                raise IOError('Specified directory ('+path+') already exists, but not as a directory')
-        else:
-            os.mkdir(path)
-
-    def doesSessionExist(self, session):
-        return os.path.exists(os.path.join(os.home_dir, session))
-
-    # THESE ARE THE NUMERIC INDEX OF THE STAGE IN STAGE_INDEX_MAP
-    #def getInitialStage(self):
-    #    return self.initial_stage
-    
-    def discover(self):
-        return self.mode == 'discover'
-
-    def resume(self):
-        return self.mode == 'resume'
-
-    def getTerminalStage(self):
-        return self.terminal_stage
-
-    def getStages(self):
-        return range(0, self.getTerminalStage()+1)
-
-    def getStageCount(self):
-        return self.stage_count
-
-    def getQueries(self):
-        return list(self.queries)
-
-    def getHomeDirectoryPath(self):
-        return self.home_dir
-
-    def stringify(self):
-        return '[%s, %s]=>%s\n%s' % (STAGES[0], STAGES[self.terminal_stage], self.home_dir, str(map(lambda x: x.stringify(), self.queries)))
 
 class Muse(object):
     def __init__(self, config):
@@ -296,7 +184,7 @@ class Muse(object):
             worker_stdout_bufs.append(out_buf)
             worker_stderr_bufs.append(err_buf)
             workers.append(STAGE_CLASSES[i](self.config, w_id, stage_qs[i], stage_qs[i+1], self.module_callback, out_buf, err_buf))
-        
+
         if self.config.discover():
             for stage in self.config.getStages():
                 if stage == 0: # Special case, not from an old stage output, but the user
@@ -328,7 +216,7 @@ class Muse(object):
         # Save output to appropriately and make the manifest
         stage_results = []
 
-        
+
         eval_results = self.config.getTerminalStage() == STAGE_INDEX_MAP['import'] or self.config.getTerminalStage() == STAGE_INDEX_MAP['identify']
         _stage = 0
         hits = 0
@@ -355,7 +243,7 @@ class Muse(object):
                     stage_results[0].append((e, n))
             _stage += 1
         stage_results.reverse()
-    
+
         if eval_results:
             self.set_subtitle(' %s - %d hits, %d misses' % (self.config.session, hits, misses))
         else:
@@ -363,7 +251,7 @@ class Muse(object):
 
         self.clear_console()
 
-        with open(self.config.manifest_path, "w") as manifest: 
+        with open(self.config.manifest_path, "w") as manifest:
             pickle.dump(dict(enumerate(stage_results)), manifest)
 
         self.config.saveConfig()
