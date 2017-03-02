@@ -13,13 +13,13 @@ from StringIO import StringIO
 
 from worker import worker, WORKER_TYPES, WORKER_TYPE_MAP
 from query import QUERY_TYPES, query
-from MuseScout import MuseScout
-from MuseDoctor import MuseDoctor
-from Agent import Agent
-from Caravan import Caravan
-from friend import friend
+from scout import Scout
+from doctor import Doctor
+from agent import Agent
+from caravan import Caravan
+from friend import Friend
 from consoleui import ConsoleUI
-from MuseSessionCompiler import MuseSessionCompiler
+from sessioncompiler import SessionCompiler
 
 SCORE_BASE = 1.1
 
@@ -31,7 +31,7 @@ def similar(a, b):
 
 STAGES = ('search', 'video', 'extract', 'identify', 'import')
 W_TYPE_STG_MAP = dict(zip(WORKER_TYPES, STAGES))
-STAGE_CLASSES = (MuseScout, Caravan, MuseDoctor, Agent, friend)
+STAGE_CLASSES = (Scout, Caravan, Doctor, Agent, Friend)
 STAGE_INDEX_MAP = {stage:index for (index, stage) in list(enumerate(STAGES))}
 
 DEFAULT_HOME_DIR = os.path.join(os.getcwd(), 'Muse')
@@ -371,7 +371,7 @@ class Muse(object):
 if __name__ == '__main__':
     config = Config(ParseArgs())
     if config.compile_sessions:
-        compiler = MuseSessionCompiler(config)
+        compiler = SessionCompiler(config)
         compiler.run()
     else:
         muse = Muse(config)

@@ -10,7 +10,7 @@ def _is_session(session_name_re, sessions_dir, s):
             return True
     return False
 
-class MuseSessionCompiler:
+class SessionCompiler:
     def __init__(self, config):
         self.config = config
         self.session_name_re = re.compile(r'[A-Z]{3}\d{1,3}_\d+')

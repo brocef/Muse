@@ -16,9 +16,9 @@ _DEBUG = False
 search_url = 'https://www.youtube.com/results?search_query=%s'
 page_search_url = 'https://www.youtube.com/results?search_query=%s&page=%d'
 
-class scout(worker.Worker):
+class Scout(worker.Worker):
     def __init__(self, *args):
-        super(scout, self).__init__(*args)
+        super(Scout, self).__init__(*args)
         self._did_num_in_mult = False
 
     def process(self, query, prog_cb):
