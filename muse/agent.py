@@ -75,14 +75,14 @@ class Agent(worker.Worker):
 
     def IdentifySoundFile(self, yt_result, min_score=0.5):
         result_gen = acoustid.match(API_KEY, yt_result['mp3_path'])
-        
+
         results = []
         for r in result_gen:
             (score, rid, title, artist) = r
             if title is None or artist is None:
                 continue
             results.append(r)
-        
+
         try:
             results = map(lambda r:(nilog(r[0]), r[1], r[2].encode('utf8'), r[3].encode('utf8')), results)
             results = filter(lambda x: x[0]>=nilog(min_score), results)
@@ -104,7 +104,7 @@ class Agent(worker.Worker):
             q = yt_result['query']
             q_terms = yt_result['query_terms']
             num = yt_result['query_num_pages']
-           
+
             '''
             if STRICT and total > 0 and total < STRICT_THRESHOLD:
                 key, score = ta_pairs.popitem()
@@ -125,5 +125,4 @@ class Agent(worker.Worker):
                 return ta_avg_scores[0]
             else:
                 return None
-            
 

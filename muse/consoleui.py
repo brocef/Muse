@@ -4,13 +4,52 @@ import sys
 import threading
 import random
 import time
-import worker 
+import worker
 
 #WORKER_TYPES = ['NIT'] + list(worker.WORKER_TYPES)
 
 _print = lambda s: print(s, end='')
 
 class ConsoleUI:
+
+# BEGIN WRAPPER FUNCTIONS
+    def setProgress(self, line, percent):
+        self.setProgress(line, percent)
+        self.refresh()
+
+    def setLineText(self, line, text, worker_id=None):
+        self.setLineText(line, text, worker_id=worker_id)
+        self.refresh()
+
+    def report_module_progress(self, status_str, module_id):
+        self.setLineText(module_id + 2, status_str, worker_id=module_id)
+
+    def report_module_percent(self, percent, module_id):
+        self.setProgress(module_id + 2, percent)
+
+    def module_callback(self, w_id, status_str, percent):
+        w_type = w_id[:3]
+        module_id = self.author_index_map[w_type]
+        self.report_module_progress(status_str, module_id)
+        self.report_module_percent(percent, module_id)
+
+    def set_title(self, title):
+        self.setLineTextCustom(0, title, 'center')
+        self.refresh()
+
+    def set_subtitle(self, text):
+        self.setLineText(1, text)
+
+    def set_footer(self, firstline, secondline):
+        self.setLineTextCustom(8, firstline, 'center')
+        self.setLineTextCustom(9, secondline, 'center')
+        self.refresh()
+
+    def clear_console(self):
+        self.clear()
+        self.refresh()
+# END WRAPPER FUNCTIONS
+
     def __init__(self, module_names, viewport_height, viewport_width=40, dx=(1, 10), dy=(0,2)):
         self.MODULES = module_names
         self.height = viewport_height
@@ -37,7 +76,7 @@ class ConsoleUI:
         self.prog_len = 16
         self.worker_format = '[%s] '
         self.worker_len = 6
-        
+
         self.line_len = self.eff_width - (self.prog_len + self.worker_len)
         self.line_format = '%-' + str(self.line_len) + 's%+16s'
 
@@ -56,7 +95,7 @@ class ConsoleUI:
             self.eff_viewport[1] = dy_min
         else:
             self.eff_viewport[1] = (self.term.height - self.height) / 2
-        
+
         if self.term.width >= self.width + dx_max * 2:
             self.eff_viewport[0] = dx_max
             self.eff_width = self.term.width - dx_max * 2

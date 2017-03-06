@@ -3,7 +3,8 @@ import os.path
 import re
 import argparse
 
-STAGES = ('search', 'video', 'extract', 'identify', 'import')
+from muse import STAGES
+
 DEFAULT_HOME_DIR = os.path.join(os.getcwd(), 'Muse')
 DEFAULT_SESSIONS_DIR = os.path.join(DEFAULT_HOME_DIR, 'Sessions')
 

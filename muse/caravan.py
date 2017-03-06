@@ -9,7 +9,7 @@ class Caravan(worker.Worker):
         super(Caravan, self).__init__(*args)
         self.video_count = 0
         self.name_format = '_v%s_%s_%s' % ('%s', self.w_id, '%04d.%s')
-    
+
     def process(self, yt_result, prog_cb):
         self.prog_cb = prog_cb
         mp4n = self.name_format % (yt_result['candidate']['id'], self.video_count, 'mp4')

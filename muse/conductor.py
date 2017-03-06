@@ -1,7 +1,5 @@
 import os
 import threading
-from math import log
-from difflib import SequenceMatcher
 import re
 from Queue import Queue, Empty
 import random
@@ -10,6 +8,7 @@ import datetime
 import pickle
 from StringIO import StringIO
 
+from muse import STAGES, STAGE_INDEX_MAP
 from config import Config, ParseArgs
 from worker import Worker, WORKER_TYPES, WORKER_TYPE_MAP
 from query import QUERY_TYPES, query
@@ -21,19 +20,15 @@ from friend import Friend
 from consoleui import ConsoleUI
 from sessioncompiler import SessionCompiler
 
-STAGES = ('search', 'video', 'extract', 'identify', 'import')
-SCORE_BASE = 1.1
+'''
+Charged with the construction of worker pools and facilitate the transport of
+information between workers.
 
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
-
-W_TYPE_STG_MAP = dict(zip(WORKER_TYPES, STAGES))
-STAGE_CLASSES = (Scout, Caravan, Doctor, Agent, Friend)
-STAGE_INDEX_MAP = {stage:index for (index, stage) in list(enumerate(STAGES))}
-
-SEARCH, VIDEO, EXTRACT, IDENTIFY, IMPORT = STAGES
-
-class Muse(object):
+Input is the initial configuration, reporting interface (UI)
+Output is the result of the app execution after completion
+  or the state of the app when terminated prematurely.
+'''
+class Conductor(object):
     def __init__(self, config):
         self.config = config
         self.cur_pct = 0.0
@@ -50,42 +45,6 @@ class Muse(object):
             self.report_module_progress(self.status_strs[a], a)
             self.report_module_percent(0.0, a)
         self.set_footer('< :: >         < :: >', 'f_t_f')
-
-    def setProgress(self, line, percent):
-        self.ui.setProgress(line, percent)
-        self.ui.refresh()
-
-    def setLineText(self, line, text, worker_id=None):
-        self.ui.setLineText(line, text, worker_id=worker_id)
-        self.ui.refresh()
-
-    def report_module_progress(self, status_str, module_id):
-        self.setLineText(module_id + 2, status_str, worker_id=module_id)
-
-    def report_module_percent(self, percent, module_id):
-        self.setProgress(module_id + 2, percent)
-
-    def module_callback(self, w_id, status_str, percent):
-        w_type = w_id[:3]
-        module_id = self.author_index_map[w_type]
-        self.report_module_progress(status_str, module_id)
-        self.report_module_percent(percent, module_id)
-
-    def set_title(self, title):
-        self.ui.setLineTextCustom(0, title, 'center')
-        self.ui.refresh()
-
-    def set_subtitle(self, text):
-        self.setLineText(1, text)
-
-    def set_footer(self, firstline, secondline):
-        self.ui.setLineTextCustom(8, firstline, 'center')
-        self.ui.setLineTextCustom(9, secondline, 'center')
-        self.ui.refresh()
-
-    def clear_console(self):
-        self.ui.clear()
-        self.ui.refresh()
 
     def run(self):
         stage_qs = list()
@@ -181,11 +140,3 @@ class Muse(object):
 
         self.config.saveConfig()
 
-if __name__ == '__main__':
-    config = Config(ParseArgs())
-    if config.compile_sessions:
-        compiler = SessionCompiler(config)
-        compiler.run()
-    else:
-        muse = Muse(config)
-        muse.run()
