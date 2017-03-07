@@ -13,7 +13,28 @@ DEFAULT_CONFIG = {
     'sessions_dir': DEFAULT_SESSIONS_DIR,
     'terminal_stage': STAGES[len(STAGES)-1]
 }
+'''
+The Config object will define many key parameters which guide application
+functionality. These properties are derived from several sources, with the
+following hierarchy (as the same property may appear in multiple sources):
+    1. User arguments from the command-line
+    2. Properties from the configuration file (config_path)
+    3. Default properties as defined in this file (DEFAULT_CONFIG)
 
+Once the Config object is initialized, it will offer the following "getter"
+functions for important properties:
+    -getMode()
+        -isModeDiscover()
+        -isModeResume()
+        -isModeCompile()
+    -getTerminalStage()
+    !getInitialStage()
+    -getConfigPath()
+    -getSessionName()
+    -getSessionDir()
+    -getHomeDir()
+    -
+'''
 class Config(object):
     def __init__(self, parsed_args):
         self.cfg = parsed_args
@@ -162,6 +183,31 @@ def SafeParseQuery(query):
     except Exception:
         return False
 
+'''
+Muse can run in the following "modes":
+    1. discover - the main function of the app which performs the end-to-end
+    functionality, but may be terminated early using the -F --final-stage flag
+    which allows the user to termiante Muse at an earlier stage for whatever
+    reason.
+
+    2. compile - aggregates the results of all accessible sessions including
+    index information, statistics, and other related information.
+
+    3. resume - resumes a session that was termianted before the final stage;
+    which can also have its own -F --final-stage configuration such that the
+    user could advance a session by one stage at a time if so desired.
+
+
+Of the above modes, each can have a set of possible properties:
+    discover:
+        1. home_dir
+        2. terminal_stage_name
+
+    compile
+
+    resume:
+        1. terminal_stage_name
+'''
 def ParseArgs():
     parser = argparse.ArgumentParser(prog='Muse')
     parser.add_argument('-D --home-dir', dest='home_dir', metavar='HOME_DIR_PATH', default=DEFAULT_HOME_DIR, help='The directory in which Muse stage folders are created (default %(default)s)')
@@ -169,27 +215,16 @@ def ParseArgs():
 
     subparsers = parser.add_subparsers(dest='mode', help='Subparser help')
     discover_parser = subparsers.add_parser('discover', help='discover help')
-    #discover_parser.add_argument('-S --start-stage', dest='initial_stage', choices=STAGES, default=STAGES[0], help='The stage %(prog)s should start with (default %(default)r)')
     discover_parser.add_argument('queries', nargs='+', type=ParseQuery, metavar='Query:Count', help='Search queries to use when scraping YouTube. You can also improve accuracy of the scraper by tagging your query type in the following form: "Untagged Query Terms {Tagged Query Terms:[Artist,Track,Album]}":N. For example, "{RZA:Artist} Lyric Videos":10 would start a search for a maximum of 10 candidate tracks of the Artist, RZA, with Lyric Videos appended to the query to give better context. Big Boi:10 for any video from the query Big Boi, with no tag heuristics enabled. You may have multiple tagged terms, but they may not be nested.')
 
     compile_parser = subparsers.add_parser('compile', help='compile help')
 
     resume_parser = subparsers.add_parser('resume', help='resume help')
     resume_parser.add_argument('session', metavar='SESSION_NAME', type=str, help='Session name help')
-    #parser.add_argument('queries', nargs='+', metavar='Q:Type:N|SESSION NAME',
-    #        help='Search queries to use when scraping YouTube or the name of a previous session. You can also improve accuracy of the scraper by tagging your query type in the following form: Q:{Artist,Track,Album,*}:N. For example, RZA:Artist:10 would start a search for a maximum of 10 candidate tracks of the Artist, RZA. Big Boi:*:10 for any video from the query Big Boi.')
-    #parser.add_argument('-R --resume', dest='resume', action='store_const', const=True, default=False,
-    #        help='Resume a past session instead of starting a new one with a new query.')
+    resume_parser.add_argument('-F --final-stage', dest='terminal_stage_name', choices=STAGES, default=STAGES[len(STAGES)-1], help='The stage %(prog)s should finish with (default %(default)s)')
 
     args = parser.parse_args()
     args.terminal_stage = STAGE_INDEX_MAP[args.terminal_stage_name]
-    #if not args.resume:
-    #    if not reduce(lambda acc, x: acc and SafeParseQuery(x), args.queries, True):
-    #        parser.print_help()
-    #        raise argparse.ArgumentTypeError('A query was malformed. Were you intending to resume a session instead?')
 
-    #if STAGE_INDEX_MAP[args.initial_stage] > STAGE_INDEX_MAP[args.terminal_stage]:
-    #    raise argparse.ArgumentTypeError('The final stage cannot happen before the start stage!')
     return vars(args)
-
 

@@ -36,10 +36,12 @@ class Conductor(object):
     Run is responsible for the entire application lifecycle.
     '''
     def run(self):
-        workers = []
+        self.init()
 
 
-
+    def init(self):
+        #
+        self.workers = []
 
 
 
