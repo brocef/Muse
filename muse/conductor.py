@@ -31,6 +31,27 @@ Output is the result of the app execution after completion
 class Conductor(object):
     def __init__(self, config):
         self.config = config
+
+    '''
+    Run is responsible for the entire application lifecycle.
+    '''
+    def run(self):
+        workers = []
+
+
+
+
+
+
+
+
+
+
+
+
+class OldConductor(object):
+    def __init__(self, config):
+        self.config = config
         self.cur_pct = 0.0
         self.all_stages = range(0, config.getTerminalStage()+2)
         self.cur_stage = 0

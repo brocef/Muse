@@ -25,7 +25,7 @@ class query:
 
     def getTerms(self):
         return self._terms
-    
+
     def getTermDict(self):
         return self._terms_dict
 
