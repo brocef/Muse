@@ -9,6 +9,7 @@ import random
 import time
 import datetime
 import pickle
+import subprocess
 from StringIO import StringIO
 
 from MuseWorker import MuseWorker, WORKER_TYPES, WORKER_TYPE_MAP
@@ -369,8 +370,32 @@ class Muse(object):
 
         self.config.saveConfig()
 
+def ensureProgramIsInstalled(program, arg):
+    with open(os.devnull, 'w') as FNULL:
+        try:
+            subprocess.call([program, arg], stdout = FNULL, stderr = subprocess.STDOUT)
+            return True
+        except OSError as e:
+            if e.errno == os.errno.ENOENT:
+                return False
+            else:
+                raise
+
 if __name__ == '__main__':
     config = MuseConfig(ParseArgs())
+    
+    all_deps = True
+    if not ensureProgramIsInstalled('ffmpeg', '-version'):
+        print 'ffmpeg not instaled. Aborting.'
+        all_deps = False
+    
+    if not ensureProgramIsInstalled('eyeD3', '--version'):
+        print 'eyeD3 not instaled. Aborting.'
+        all_deps = False
+
+    if not all_deps:
+        exit(1)
+
     if config.compile_sessions:
         compiler = MuseSessionCompiler(config)
         compiler.run()
